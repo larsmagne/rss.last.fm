@@ -18,7 +18,6 @@ $data =~ /<title>(Shoutbox for [^ ]+)/i;
 
 rss_new($url, $1, $1);
 rss_language('en');
-rss_webmaster('larsi@gnus.org');
 rss_twice_daily();
 
 $_ = $data;
