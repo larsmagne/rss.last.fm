@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+use strict;
+use CGI;
+use XML::RSS::SimpleGen;
+use Digest::SHA1 qw(sha1_base64);
+    
+my $query = new CGI;
+my $url = $query->param('url') || $ARGV[0];
+
+if ($url eq "" || $url !~ /shoutbox/) {
+   die "No shoutbox URL given.";
+}
+
+my $data = get_url($url);
+
+$data =~ /<title>(Shoutbox for [^ ]+)/i;
+
+rss_new($url, $1, $1);
+rss_language('en');
+rss_webmaster('larsi@gnus.org');
+rss_twice_daily();
+
+$_ = $data;
+
+my $i = 0;
+
+while (s#"author user">.*?href="/user/([^"]+).*?(<img .*?src="([^"]+)").*?<blockquote>(.*?)</blockquote>##s) {
+  $i++;
+  my $contents = "$4<p><a href=\"http://www.last.fm/user/$1\"><img src=\"$3\"></a>";
+  my $user = $1;
+  $contents =~ s/&/&amp;/g;
+  $contents =~ s/</&lt;/g;
+  $contents =~ s/>/&gt;/g;
+  my $guid = sha1_base64($contents);
+  $contents = "$contents <guid>$url/$guid</guid>";
+  rss_item("$url/$i", $user, \$contents);
+}
+
+die "No items?" unless rss_item_count();
+
+my $result = rss_as_string();
+
+# Massage the output to be more useful.
+$result =~ s/\n  <title>(.*?)<\/title>/\n  <author>$1<\/author>/gs;
+$result =~ s/\n  <link>.*?<\/link>//gs;
+$result =~ s/\n  <description>(.*)/\n  <title>$1<\/title>\n  <description>$1/g;
+$result =~ s/(<guid>.*?<\/guid>)<\/description>/<\/description>\n  $1/g;
+
+print "Content-type: application/xml\n\n", $result;
+exit;
