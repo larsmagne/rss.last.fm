@@ -8,8 +8,10 @@ use Digest::SHA1 qw(sha1_base64);
 my $query = new CGI;
 my $url = $query->param('url') || $ARGV[0];
 
-if ($url eq "" || $url !~ /shoutbox/) {
-   die "No shoutbox URL given.";
+if ($url eq "" || $url !~ /^http:\/\/www.last.fm.*shoutbox/) {
+    print "Content-type: text/plain\n\n";
+    print "No shoutbox URL given.";
+    exit;
 }
 
 my $data = get_url($url);
@@ -36,7 +38,11 @@ while (s#"author user">.*?href="/user/([^"]+).*?(<img .*?src="([^"]+)").*?<block
   rss_item("$url/$i", $user, \$contents);
 }
 
-die "No items?" unless rss_item_count();
+if (! rss_item_count()) {
+    print "Content-type: text/plain\n\n";
+    print "No items?";
+    exit;
+}
 
 my $result = rss_as_string();
 
