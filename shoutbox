@@ -28,12 +28,14 @@ my $i = 0;
 
 while (s#"author user">.*?href="/user/([^"]+).*?(<img .*?src="([^"]+)").*?<blockquote>(.*?)</blockquote>##s) {
   $i++;
-  my $contents = "$4<p><a href=\"http://www.last.fm/user/$1\"><img src=\"$3\"></a>";
   my $user = $1;
+  my $contents = "$4";
+  my $guid = sha1_base64($contents);
+  $contents .= "<p><a href=\"http://www.last.fm/user/$1\"><img src=\"$3\"></a>";
+  # Quote the HTML-ey bits.
   $contents =~ s/&/&amp;/g;
   $contents =~ s/</&lt;/g;
   $contents =~ s/>/&gt;/g;
-  my $guid = sha1_base64($contents);
   $contents = "$contents <guid>$url/$guid</guid>";
   rss_item("$url/$i", $user, \$contents);
 }
